@@ -4,6 +4,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 from datetime import datetime
 
 TOKEN = os.getenv("TOKEN")
+print("TOKEN DEBUG:", TOKEN)
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text("🤖 Bot đang online 24/7!")
