@@ -1,6 +1,7 @@
 import os
 import dateparser
-from datetime import datetime
+from datetime import datetime, timedelta
+import re
 from telegram import Update
 from telegram.ext import (
     Updater,
@@ -78,22 +79,32 @@ def remind_at(update: Update, context: CallbackContext):
 def smart_remind(update: Update, context: CallbackContext):
     text = update.message.text.lower()
 
-    # chỉ xử lý khi có chữ nhắc
     if "nhắc" not in text:
         return
 
-    # parse thời gian tiếng Việt
-    dt = dateparser.parse(
-        text,
-        languages=["vi"],
-        settings={"PREFER_DATES_FROM": "future"}
-    )
+    now = datetime.now()
+
+    # ===== CASE: X phút nữa =====
+    import re
+
+    m = re.search(r"(\d+)\s*phút nữa", text)
+    if m:
+        minutes = int(m.group(1))
+        dt = now + timedelta(minutes=minutes)
+    else:
+        # ===== CASE: HHhMM hoặc HH:MM =====
+        text_fixed = text.replace("h", ":")
+        dt = dateparser.parse(
+            text_fixed,
+            languages=["vi"],
+            settings={"PREFER_DATES_FROM": "future"}
+        )
 
     if not dt:
         update.message.reply_text("❌ Tôi chưa hiểu thời gian bạn nói 😢")
         return
 
-    delay = (dt - datetime.now()).total_seconds()
+    delay = (dt - now).total_seconds()
 
     if delay <= 0:
         update.message.reply_text("❌ Thời gian phải ở tương lai.")
@@ -111,6 +122,7 @@ def smart_remind(update: Update, context: CallbackContext):
     update.message.reply_text(
         f"🧠 OK hiểu rồi!\n⏰ Tôi sẽ nhắc bạn lúc {dt.strftime('%H:%M %d-%m-%Y')}"
     )
+
 
 # ===== MAIN =====
 def main():
